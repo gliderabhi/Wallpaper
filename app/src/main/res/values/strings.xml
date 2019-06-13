@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">AutoPics</string>
+    <string name="Width">width</string>
+    <string name="Time">Time</string>
+    <string name="URL">URL</string>
+    <string name="PREFS_NAME">CategoryData</string>
+    <string name="Category">Category</string>
+
+    <string name="height">height</string>
+</resources>

@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "814374707498",
+    "firebase_url": "https://wallpaper-5853e.firebaseio.com",
+    "project_id": "wallpaper-5853e",
+    "storage_bucket": "wallpaper-5853e.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:814374707498:android:3af061e71f304fad",
+        "android_client_info": {
+          "package_name": "com.example.abhishekhsharma.wallpaper"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "814374707498-ue2lu6nqosj4qmvkduq3tpij9s10v1ra.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.abhishekhsharma.wallpaper",
+            "certificate_hash": "860364cd6493b765f97f8d2953ac45a6d74e56ea"
+          }
+        },
+        {
+          "client_id": "814374707498-jd3m5rebsl5vq1jr13cfl3l0kh4g8skl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCFJXV6-_oJgY-NQdfD-ofZD9ka7cUbbDs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "814374707498-jd3m5rebsl5vq1jr13cfl3l0kh4g8skl.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
