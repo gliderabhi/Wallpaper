@@ -16,6 +16,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
 import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.ValueEventListener;
 import com.squareup.picasso.Picasso;
@@ -95,25 +96,14 @@ public class GetImage extends JobService {
 
         FirebaseDatabase mFirebase= FirebaseDatabase.getInstance();
         DatabaseReference mdata= mFirebase.getReference(category);
-        mdata.addValueEventListener( new ValueEventListener() {
+        Query q= mdata.orderByChild( "name" ).equalTo( String.valueOf( imageCatNO )+ ".jpg" );
+        q.addValueEventListener( new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-
-                for(DataSnapshot ds : dataSnapshot.getChildren()) {
-
-                    if (ds != null) {
-                        String id = ds.getKey();
-                        if (String.valueOf(imageCatNO).matches(Objects.requireNonNull(id))) {
-                            String url = Objects.requireNonNull(ds.getValue(Upload.class)).getImageUrl();
-                            downloadImage(url);
-                            break;
-                        }else{
-
-                            //Log.e("Error","no image available  "+String.valueOf(imageCatNO) +" " +id +" found");
-                        }
-                    }else{
-                        //Log.e("Error","no data available");
-                    }
+                for(DataSnapshot ds : dataSnapshot.getChildren()){
+                    Upload upload= ds.getValue(Upload.class);
+                    Log.e( "msg",upload.getImageUrl() );
+                    downloadImage( upload.getImageUrl() );
                 }
             }
 
@@ -135,33 +125,22 @@ public class GetImage extends JobService {
 
         FirebaseDatabase mFirebase= FirebaseDatabase.getInstance();
         DatabaseReference mdata= mFirebase.getReference(deviceAppUID);
-         mdata.addValueEventListener(new ValueEventListener() {
-             @Override
-             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+        Query q= mdata.orderByChild( "name" ).equalTo( String.valueOf( imageNoRand )+ ".jpg" );
+        q.addValueEventListener( new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                for(DataSnapshot ds : dataSnapshot.getChildren()){
+                    Upload upload= ds.getValue(Upload.class);
+                    Log.e( "msg",upload.getImageUrl() );
+                    downloadImage( upload.getImageUrl() );
+                }
+            }
 
-                      for(DataSnapshot ds : dataSnapshot.getChildren()) {
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                          if (ds != null) {
-                              String id = ds.getKey();
-                              if (String.valueOf(imageNoRand).matches(Objects.requireNonNull(id))) {
-                                  String url = Objects.requireNonNull(ds.getValue(Upload.class)).getImageUrl();
-                                  downloadImage(url);
-                                  break;
-                              }else{
-
-                                  ////Log.e("Error","no image available  "+String.valueOf(imageNoRand)+ " " +String.valueOf(imageNo));
-                              }
-                          }else{
-                              //Log.e("Error","no data available");
-                          }
-                      }
-             }
-
-             @Override
-             public void onCancelled(@NonNull DatabaseError databaseError) {
-
-             }
-         });
+            }
+        } );
 
     }
 

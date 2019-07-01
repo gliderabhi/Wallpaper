@@ -2,6 +2,7 @@ package com.example.abhishekhsharma.wallpaper;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -61,6 +62,8 @@ public class MainActivity extends Activity {
     private SharedPreferences.Editor editor;
     private String uid,url;
     private Job job;
+    private ProgressDialog progress;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -259,6 +262,12 @@ public class MainActivity extends Activity {
 
         recyclerView = findViewById(R.id.listtwo);
 
+        progress = new ProgressDialog(this);
+        progress.setMessage("Please wait !!! Loading");
+        progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        progress.setIndeterminate(true);
+        progress.setProgress(0);
+        progress.show();
         linearLayoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(linearLayoutManager);
 
@@ -269,23 +278,20 @@ public class MainActivity extends Activity {
 
         FirebaseRecyclerOptions<ImagesDetails> options =
                 new FirebaseRecyclerOptions.Builder<ImagesDetails>()
-                        .setQuery(query, new SnapshotParser<ImagesDetails>() {
-                            @NonNull
-                            @Override
-                            public ImagesDetails parseSnapshot( DataSnapshot snapshot) {
-                                if (snapshot != null) {
+                        .setQuery(query, snapshot -> {
+                            if (snapshot != null) {
 
-                                    //Log.e( "msg","items here " );
-                                    return new ImagesDetails( snapshot.child( "name" ).getValue().toString(),
-                                            snapshot.child( "category" ).getValue().toString(),
-                                            snapshot.child( "urlImage" ).getValue().toString() );
-                                }
-                                else{
-                                    return null;
-                                }
+                                //Log.e( "msg","items here " );
+                                return new ImagesDetails( snapshot.child( "name" ).getValue().toString(),
+                                        snapshot.child( "category" ).getValue().toString(),
+                                        snapshot.child( "urlImage" ).getValue().toString() );
                             }
-                        })
+                            else{
+                                return null;
+                            }
+                        } )
                         .build();
+
          adapter = new FirebaseRecyclerAdapter<ImagesDetails, ViewHolder>(options) {
             @NonNull
             @Override
@@ -294,7 +300,6 @@ public class MainActivity extends Activity {
                 // layout called R.layout.message for each item
                 View view = LayoutInflater.from(parent.getContext())
                         .inflate(R.layout.list_item, parent, false);
-
                 return new ViewHolder(view);
             }
 
@@ -305,23 +310,20 @@ public class MainActivity extends Activity {
                    holder.setTxtDesc( model.getCategory() );
                    holder.setTxtTitle( model.getName() );
 
-                   holder.img.setOnClickListener( new View.OnClickListener() {
-                       @Override
-                       public void onClick(View v) {
-                           Toast.makeText( getApplicationContext(),String.valueOf( position ),Toast.LENGTH_SHORT ).show();
+                   holder.img.setOnClickListener( v -> {
+                       Toast.makeText( getApplicationContext(),String.valueOf( position ),Toast.LENGTH_SHORT ).show();
 
-                           switch (position){
-                               case 0: editor.putString( Constants.Category,Constants.custom ); editor.apply();break;
-                               case 1: editor.putString( Constants.Category,Constants.cars ); editor.apply();break;
-                               case 2: editor.putString( Constants.Category,Constants.Celeb ); editor.apply();break;
-                               case 3: editor.putString( Constants.Category,Constants.nature ); editor.apply();break;
-                               case 4: editor.putString( Constants.Category,Constants.ocean ); editor.apply();break;
-                               case 5: editor.putString( Constants.Category,Constants.space ); editor.apply();break;
-                               case 6: editor.putString( Constants.Category,Constants.building ); editor.apply();break;
-                           }
-                           startActivity( new Intent( getApplicationContext(),SetTime.class ) );
-                           startJOb();
+                       switch (position){
+                           case 0: editor.putString( Constants.Category,Constants.custom ); editor.apply();break;
+                           case 1: editor.putString( Constants.Category,Constants.cars ); editor.apply();break;
+                           case 2: editor.putString( Constants.Category,Constants.Celeb ); editor.apply();break;
+                           case 3: editor.putString( Constants.Category,Constants.nature ); editor.apply();break;
+                           case 4: editor.putString( Constants.Category,Constants.ocean ); editor.apply();break;
+                           case 5: editor.putString( Constants.Category,Constants.space ); editor.apply();break;
+                           case 6: editor.putString( Constants.Category,Constants.building ); editor.apply();break;
                        }
+                       startActivity( new Intent( getApplicationContext(),SetTime.class ) );
+                       startJOb();
                    } );
             }
              @Override
@@ -329,6 +331,8 @@ public class MainActivity extends Activity {
                  // Called each time there is a new data snapshot. You may want to use this method
                  // to hide a loading spinner or check for the "no documents" state and update your UI.
                  // ...
+
+                 progress.dismiss();
              }
 
              @Override
@@ -336,6 +340,7 @@ public class MainActivity extends Activity {
                  // Called when there is an error getting data. You may want to update
                  // your UI to display an error message to the user.
                  // ...
+                 progress.dismiss();
                 Log.e( "msg",e.getMessage());
              }
         };
