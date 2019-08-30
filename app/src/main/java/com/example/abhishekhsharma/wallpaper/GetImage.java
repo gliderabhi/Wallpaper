@@ -1,17 +1,27 @@
 package com.example.abhishekhsharma.wallpaper;
 
 import android.app.WallpaperManager;
+
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
 import com.firebase.jobdispatcher.JobParameters;
 
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.support.annotation.NonNull;
+import android.os.Handler;
+import android.os.PowerManager;
 import android.util.Log;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import com.firebase.jobdispatcher.JobService;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -19,7 +29,6 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.ValueEventListener;
-import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 
 import java.io.File;
@@ -32,8 +41,11 @@ public class GetImage extends JobService {
     private String category ;
     private SharedPreferences preferences;
     private WallpaperManager myWallpaperManager;
-    private Target target;
+    private Boolean finished = false ;
+    private  boolean OnOff;
+    private JobParameters parameter;
     private void doInBack(JobParameters parameters) {
+        parameter = parameters;
         new Thread(() -> {
             try {
                 preferences = Constants.getApplicationUsingReflection().getApplicationContext().getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
@@ -55,14 +67,15 @@ public class GetImage extends JobService {
 
                 }
         }
-            jobFinished(parameters,false);
+
+
+            //jobFinished(parameters, false);
         }).start();
     }
 
     private void getLastNode(){
         final int[] node = new int[1];
         //Log.e( "Msg","Getting image no" );
-
         FirebaseDatabase mFirebase= FirebaseDatabase.getInstance();
         DatabaseReference mdata= mFirebase.getReference("count");
         mdata.addValueEventListener( new ValueEventListener() {
@@ -70,13 +83,25 @@ public class GetImage extends JobService {
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 //Log.e("msg", String.valueOf( dataSnapshot.getValue()) );
                 Count cn= dataSnapshot.getValue(Count.class);
-                switch (category){
-                    case "Celebrities" : node[0] = Objects.requireNonNull( cn ).getCeleb();break;
-                    case "Cars" : node[0] = Objects.requireNonNull( cn ).getCars();break;
-                    case "Space" : node[0] = Objects.requireNonNull( cn ).getSpace();break;
-                    case "Nature" : node[0] = Objects.requireNonNull( cn ).getNature();break;
-                    case "Buildings" : node[0] = Objects.requireNonNull( cn ).getBuilding();break;
-                    case "Ocean" : node[0] = Objects.requireNonNull( cn ).getOcean();break;
+                switch (category) {
+                    case "Celebrities":
+                        node[0] = Objects.requireNonNull(cn).getCeleb();
+                        break;
+                    case "Cars":
+                        node[0] = Objects.requireNonNull(cn).getCars();
+                        break;
+                    case "Space":
+                        node[0] = Objects.requireNonNull(cn).getSpace();
+                        break;
+                    case "Nature":
+                        node[0] = Objects.requireNonNull(cn).getNature();
+                        break;
+                    case "Buildings":
+                        node[0] = Objects.requireNonNull(cn).getBuilding();
+                        break;
+                    case "Ocean":
+                        node[0] = Objects.requireNonNull(cn).getOcean();
+                        break;
                 }
 
                 //Log.e( "msg",category+ " "+ String.valueOf( node[0] ));
@@ -104,7 +129,7 @@ public class GetImage extends JobService {
                     Upload upload= ds.getValue(Upload.class);
                     Log.e( "msg",upload.getImageUrl() );
                     downloadImage( upload.getImageUrl() );
-                }
+                     }
             }
 
             @Override
@@ -133,6 +158,7 @@ public class GetImage extends JobService {
                     Upload upload= ds.getValue(Upload.class);
                     Log.e( "msg",upload.getImageUrl() );
                     downloadImage( upload.getImageUrl() );
+
                 }
             }
 
@@ -146,55 +172,39 @@ public class GetImage extends JobService {
 
     private void downloadImage(String url) {
         //Log.e("Enter","entered download unit ");
-         target = new Target() {
-            @Override
-            public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-
-                //Log.e( Constants.JOb_TAG, " loaded Bitmap : " + url );
-                if (bitmap != null) {
-                    //Log.e( Constants.JOb_TAG, "returned to postexecute " );
-
-                    try {
-                        myWallpaperManager = WallpaperManager.getInstance( Constants.getApplicationUsingReflection().getApplicationContext() );
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-
-                    try {
-                        myWallpaperManager.setBitmap( bitmap );
-                        //Log.e( "textMsg", "wallpaper set" );
-
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                }
-
-            }
-
-            @Override
-            public void onBitmapFailed(Exception e, Drawable errorDrawable) {
-
-                e.printStackTrace();
-                //Log.e( Constants.JOb_TAG, "Could not load Bitmap from: " + url );
-
-            }
-
-            @Override
-            public void onPrepareLoad(Drawable placeHolderDrawable) {
-
-                //Log.e( Constants.JOb_TAG, "Something going on: " );
-            }
-        };
-
-        //Log.e(Constants.JOb_TAG, "work started downloading ");
         try {
 
-            Picasso.get().load(url)
-                    .resize(preferences.getInt(Constants.Width, 720), preferences.getInt(Constants.height, 1024))
-                    .centerInside()
-                    .into( target );
 
+         Log.e("msg", "before glide ");
+            Glide.with(this)
+                    .asBitmap()
+                    .load(url)
+                    .into(new CustomTarget<Bitmap>() {
+                        @Override
+                        public void onResourceReady(@NonNull Bitmap bitmap, @Nullable Transition<? super Bitmap> transition) {
+                            try {
+                                myWallpaperManager = WallpaperManager.getInstance( Constants.getApplicationUsingReflection().getApplicationContext() );
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+
+                            try {
+                                myWallpaperManager.setBitmap( bitmap );
+                                Log.e( "textMsg", "wallpaper set" );
+                                finished = true;
+
+                                jobFinished(parameter, false);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+
+
+                        }
+
+                        @Override
+                        public void onLoadCleared(@Nullable Drawable placeholder) {
+                        }
+                    });
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -202,11 +212,23 @@ public class GetImage extends JobService {
     }
 
     private int getRandomNumberInRange( int end) {
-        double randomDouble = Math.random();
-        randomDouble = randomDouble * end + 1;
-        //Log.e( "msg", String.valueOf( randomDouble ) + " " +String.valueOf( end ));
-        return (int) randomDouble;
-            }
+        int d =preferences.getInt(Constants.Num , 1);
+        if(d<=end){
+            Log.e("msg",String.valueOf(d));
+            SharedPreferences.Editor editor = preferences.edit();
+            editor.putInt(Constants.Num, d + 1);
+            editor.apply();
+            return d;
+        }else {
+
+        d=1;
+        }
+
+
+        return 1;
+    }
+
+
     @Override
     public boolean onStartJob(JobParameters job) {
         Log.e(Constants.JOb_TAG,"started");
@@ -215,16 +237,22 @@ public class GetImage extends JobService {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+         OnOff = pm.isInteractive();
 
-
-        DatabaseReference db=FirebaseDatabase.getInstance().getReference("User");
-        Map map = new HashMap();
-        map.put("timestamp", ServerValue.TIMESTAMP);
-        map.put( "user" , Objects.requireNonNull( FirebaseAuth.getInstance().getCurrentUser() ).getUid()  );
-        map.put( "category", Objects.requireNonNull( preferences.getString( Constants.Category, "" ) ) );
-        db.child( Objects.requireNonNull( preferences.getString( Constants.UID, "" ) ) ).updateChildren(map);
-        doInBack(job);
-
+        if(OnOff) {
+            DatabaseReference db = FirebaseDatabase.getInstance().getReference( "User" );
+            Map map = new HashMap();
+            Log.e( "msg", " working the job " );
+            map.put( "timestamp", ServerValue.TIMESTAMP );
+            map.put( "user", Objects.requireNonNull( FirebaseAuth.getInstance().getCurrentUser() ).getUid() );
+            map.put( "category", Objects.requireNonNull( preferences.getString( Constants.Category, "" ) ) );
+            db.child( Objects.requireNonNull( preferences.getString( Constants.UID, "" ) ) ).updateChildren( map );
+            doInBack( job );
+        }else{
+            jobFinished(job,false);
+            Log.e( "msg", " Exiting the job " );
+        }
         return true;
     }
     public static void deleteCache(Context context) {

@@ -11,22 +11,21 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
 import android.graphics.Point;
-import android.media.Image;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.firebase.jobdispatcher.Constraint;
 import com.firebase.jobdispatcher.FirebaseJobDispatcher;
@@ -36,13 +35,11 @@ import com.firebase.jobdispatcher.Lifetime;
 import com.firebase.jobdispatcher.Trigger;
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.firebase.ui.database.FirebaseRecyclerOptions;
-import com.firebase.ui.database.SnapshotParser;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
@@ -50,7 +47,9 @@ import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 
@@ -63,7 +62,7 @@ public class MainActivity extends Activity {
     private String uid,url;
     private Job job;
     private ProgressDialog progress;
-
+    public ArrayList categoryList;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -96,7 +95,7 @@ public class MainActivity extends Activity {
 
              }
 
-             public void startJOb() {
+    public void startJOb() {
 
                  if (!preferences.getString(Constants.Category, "").matches(Constants.custom)) {
                      startActivity(new Intent(getApplicationContext(), SetTime.class));
@@ -108,6 +107,7 @@ public class MainActivity extends Activity {
                              .setTrigger(Trigger.executionWindow(timeInterval*30 , timeInterval * 60))
                              .setConstraints(Constraint.ON_ANY_NETWORK)
                              .setTag( JOb_TAG )
+
                              .build();
 
                      try {
@@ -142,8 +142,7 @@ public class MainActivity extends Activity {
 
              }
 
-
-             public void initialise(){
+    public void initialise(){
 
                  uid= UUID.randomUUID().toString();
                  preferences = getApplicationContext().getSharedPreferences(getString(R.string.PREFS_NAME), Context.MODE_PRIVATE);
@@ -151,14 +150,15 @@ public class MainActivity extends Activity {
 
                  dispatcher=new FirebaseJobDispatcher(new GooglePlayDriver(this));
                  editor = preferences.edit();
-                 if((preferences.getString(Constants.UID,"").matches(""))){
+                 if((Objects.requireNonNull(preferences.getString(Constants.UID, "")).matches(""))){
                      editor.putString(Constants.UID,uid);
                      editor.apply();
                  }
-                 timeInterval= Integer.parseInt(preferences.getString(getString(R.string.Time),"1"));
+                 timeInterval= Integer.parseInt(Objects.requireNonNull(preferences.getString(getString(R.string.Time), "1")));
 
                  Log.e( "msg","working image set" );
 
+                 categoryList = new ArrayList();
              }
 
 
@@ -233,19 +233,11 @@ public class MainActivity extends Activity {
     private FirebaseAuth mAuth;
 
     private void signInAnonymously() {
-        mAuth.signInAnonymously().addOnSuccessListener(this, new OnSuccessListener<AuthResult>() {
-            @Override
-            public void onSuccess(AuthResult authResult) {
-                Log.e("TAG", "success sign");
-                // do your stuff
-            }
+        mAuth.signInAnonymously().addOnSuccessListener(this, authResult -> {
+            Log.e("TAG", "success sign");
+            // do your stuff
         })
-                .addOnFailureListener(this, new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception exception) {
-                        Log.e("TAG", "failed sign");
-                    }
-                });
+                .addOnFailureListener(this, exception -> Log.e("TAG", "failed sign"));
     }
 
 
@@ -255,7 +247,6 @@ public class MainActivity extends Activity {
     }
 
     private RecyclerView recyclerView;
-    private LinearLayoutManager linearLayoutManager;
     private FirebaseRecyclerAdapter<ImagesDetails,ViewHolder> adapter;
 
     private void createView(){
@@ -268,8 +259,13 @@ public class MainActivity extends Activity {
         progress.setIndeterminate(true);
         progress.setProgress(0);
         progress.show();
-        linearLayoutManager = new LinearLayoutManager(this);
-        recyclerView.setLayoutManager(linearLayoutManager);
+
+        //linearLayoutManager = new LinearLayoutManager(this);
+        GridLayoutManager gridLayoutManager = new GridLayoutManager(getApplicationContext(),3);
+        gridLayoutManager.setOrientation(LinearLayoutManager.HORIZONTAL); // set Horizontal Orientation
+
+        recyclerView.setLayoutManager(gridLayoutManager);
+        //recyclerView.addItemDecoration(new SpacesItemDecoration(20));
 
 
         Query query = FirebaseDatabase.getInstance()
@@ -305,15 +301,21 @@ public class MainActivity extends Activity {
 
 
             @Override
-            protected void onBindViewHolder(@NonNull ViewHolder holder, int position, ImagesDetails model) {
+            protected void onBindViewHolder(@NonNull ViewHolder holder, int position, @NonNull ImagesDetails model) {
                    holder.setImg( model.getUrlImage() );
                    holder.setTxtDesc( model.getCategory() );
                    holder.setTxtTitle( model.getName() );
 
                    holder.img.setOnClickListener( v -> {
-                       Toast.makeText( getApplicationContext(),String.valueOf( position ),Toast.LENGTH_SHORT ).show();
+                       Toast.makeText( getApplicationContext(),model.getName(),Toast.LENGTH_SHORT ).show();
 
-                       switch (position){
+                       if(model.getName().matches("People")){
+                           editor.putString(Constants.Category, Constants.Celeb);editor.apply();
+                       }else {
+                           editor.putString(Constants.Category, model.getName());
+                           editor.apply();
+
+                       }/*switch (position){
                            case 0: editor.putString( Constants.Category,Constants.custom ); editor.apply();break;
                            case 1: editor.putString( Constants.Category,Constants.cars ); editor.apply();break;
                            case 2: editor.putString( Constants.Category,Constants.Celeb ); editor.apply();break;
@@ -321,7 +323,7 @@ public class MainActivity extends Activity {
                            case 4: editor.putString( Constants.Category,Constants.ocean ); editor.apply();break;
                            case 5: editor.putString( Constants.Category,Constants.space ); editor.apply();break;
                            case 6: editor.putString( Constants.Category,Constants.building ); editor.apply();break;
-                       }
+                       }*/
                        startActivity( new Intent( getApplicationContext(),SetTime.class ) );
                        startJOb();
                    } );
@@ -336,7 +338,7 @@ public class MainActivity extends Activity {
              }
 
              @Override
-             public void onError(DatabaseError e) {
+             public void onError(@NonNull DatabaseError e) {
                  // Called when there is an error getting data. You may want to update
                  // your UI to display an error message to the user.
                  // ...
@@ -391,6 +393,8 @@ public class MainActivity extends Activity {
             txtDesc.setText(string);
         }
     }
+
+
     public static void deleteCache(Context context) {
         try {
             File dir = context.getCacheDir();
@@ -401,8 +405,8 @@ public class MainActivity extends Activity {
     public static boolean deleteDir(File dir) {
         if (dir != null && dir.isDirectory()) {
             String[] children = dir.list();
-            for (int i = 0; i < children.length; i++) {
-                boolean success = deleteDir(new File(dir, children[i]));
+            for (String child : children) {
+                boolean success = deleteDir(new File(dir, child));
                 if (!success) {
                     return false;
                 }
@@ -419,7 +423,6 @@ public class MainActivity extends Activity {
         super.onStop();
         deleteCache( getApplicationContext() );
         recyclerView.setAdapter( null );
-        linearLayoutManager.removeAllViews();
         adapter.stopListening();
     }
     @Override
@@ -446,4 +449,5 @@ public class MainActivity extends Activity {
         }
         //loadIntAdd();
     }
-}
+
+    }
